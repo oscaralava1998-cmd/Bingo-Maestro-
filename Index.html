@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bingo Maestro Pro - Diseño Limpio</title>
+    <style>
+        :root {
+            --azul-fondo: #050a1d;
+            --azul-card: #111b36;
+            --acento: #00d2ff;
+            --marcado: #ff3e3e;
+            --oro: #ffd700;
+            --rojo-borrar: #ff4444;
+            --verde-pro: #2ecc71;
+        }
+
+        * { box-sizing: border-box; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; font-family: 'Segoe UI', sans-serif; background-color: var(--azul-fondo); color: white; overflow-x: hidden; }
+
+        /* INICIO */
+        #login-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle at center, #1a2a6c, #050a1d); 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 2000; padding: 20px;
+        }
+        .btn-main { background: var(--acento); color: #000; border: none; padding: 15px 40px; font-size: 1.1rem; font-weight: 900; border-radius: 50px; cursor: pointer; width: 260px; margin-bottom: 12px; }
+        
+        .btn-premium-price { 
+            background: rgba(255, 215, 0, 0.1); color: var(--oro); border: 2px solid var(--oro); 
+            padding: 12px 20px; border-radius: 50px; cursor: pointer; font-size: 0.9rem; font-weight: bold; 
+            width: 260px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;
+        }
+
+        /* JUEGO */
+        #game-interface { display: none; padding: 20px; flex-direction: column; align-items: center; }
+        
+        .header-controls {
+            background: #16254a; padding: 20px; border-radius: 20px; width: 95%; max-width: 450px;
+            text-align: center; border: 1px solid var(--acento); box-shadow: 0 8px 32px rgba(0,0,0,0.5); position: sticky; top: 10px; z-index: 1000;
+        }
+        .input-main { width: 85px; font-size: 1.8rem; border-radius: 12px; border: none; padding: 10px; text-align: center; background: #000; color: var(--acento); font-weight: bold; }
+
+        /* CARTONES */
+        #contenedor-cartones { display: grid; grid-template-columns: repeat(auto-fit, 220px); gap: 20px; width: 100%; justify-content: center; margin-top: 30px; }
+        .card-wrapper { background: var(--azul-card); padding: 15px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.1); width: 220px; position: relative; }
+        
+        /* CAMPO PARA CÓDIGO DEL TABLERO */
+        .input-codigo-tablero {
+            width: 100%;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(0,210,255,0.3);
+            color: var(--acento);
+            font-size: 0.8rem;
+            padding: 6px 10px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            text-align: center;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .bingo-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
+        .cell { width: 100%; aspect-ratio: 1/1; border: none; border-radius: 5px; text-align: center; font-size: 1rem; font-weight: bold; display: flex; align-items: center; justify-content: center; }
+        input.cell { background: #f0f0f0; color: #222; }
+        input.cell.marked { background: var(--marcado) !important; color: white !important; }
+        .free-cell { background: var(--oro); color: #000; font-size: 0.45rem; font-weight: 900; text-align: center; line-height: 1; }
+
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 9999; flex-direction: column; align-items: center; justify-content: center; }
+        .payment-card { background: white; color: #333; padding: 30px; border-radius: 25px; width: 90%; max-width: 350px; text-align: center; }
+    </style>
+</head>
+<body>
+
+    <audio id="snd-mark" src="https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3"></audio>
+    <audio id="snd-win" src="https://assets.mixkit.co/active_storage/sfx/2020/2020-preview.mp3"></audio>
+
+    <div id="login-screen">
+        <h1 style="color:var(--acento); margin-bottom:10px;">Bingo Maestro</h1>
+        <button class="btn-main" onclick="iniciar()">JUGAR GRATIS</button>
+        <button id="btn-premium-trigger" class="btn-premium-price" onclick="abrirPago()">
+            <span>DESBLOQUEAR PRO</span>
+            <span>$3.99</span>
+        </button>
+    </div>
+
+    <div id="payment-modal" class="modal-overlay">
+        <div class="payment-card">
+            <h2>Bingo Maestro Pro</h2>
+            <div style="font-size: 2.5rem; font-weight: 900; margin: 15px 0; color: var(--verde-pro);">$3.99</div>
+            <button class="btn-main" style="width:100%; background:var(--verde-pro); color:white;" onclick="confirmarPago()">COMPRAR AHORA</button>
+            <button style="background:none; border:none; color:#999; margin-top:10px; cursor:pointer;" onclick="cerrarPago()">Cerrar</button>
+        </div>
+    </div>
+
+    <div id="game-interface">
+        <div class="header-controls">
+            <input type="number" id="bola" class="input-main" placeholder="00">
+            <div style="margin-top:15px; display:flex; justify-content:center; gap:10px;">
+                <button style="background:var(--acento); color:black; padding:12px 25px; border-radius:12px; font-weight:bold; cursor:pointer;" onclick="marcar()">MARCAR</button>
+                <button style="background:var(--verde-pro); color:white; padding:12px 25px; border-radius:12px; font-weight:bold; cursor:pointer;" onclick="intentarAnadir()">+ AÑADIR</button>
+            </div>
+        </div>
+        <div id="contenedor-cartones"></div>
+    </div>
+
+    <script>
+        let premium = localStorage.getItem('bingo_premium') === 'true';
+
+        function iniciar() {
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('game-interface').style.display = 'flex';
+            nuevoCarton();
+        }
+
+        function abrirPago() { document.getElementById('payment-modal').style.display = 'flex'; }
+        function cerrarPago() { document.getElementById('payment-modal').style.display = 'none'; }
+        function confirmarPago() {
+            localStorage.setItem('bingo_premium', 'true');
+            location.reload();
+        }
+
+        function intentarAnadir() {
+            const count = document.querySelectorAll('.card-wrapper').length;
+            if(count >= 3 && !premium) { abrirPago(); } else { nuevoCarton(); }
+        }
+
+        function nuevoCarton() {
+            const cont = document.getElementById('contenedor-cartones');
+            const wrap = document.createElement('div');
+            wrap.className = 'card-wrapper';
+            wrap.innerHTML = `
+                <div style="position:absolute; top:-10px; right:-10px; width:26px; height:26px; background:var(--rojo-borrar); color:white; border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer; font-weight:bold; border:2px solid var(--azul-fondo);" onclick="this.parentElement.remove()">✕</div>
+                
+                <input type="text" class="input-codigo-tablero" placeholder="ESCRIBIR CÓDIGO">
+
+                <div class="bingo-grid">
+                    ${['B','I','N','G','O'].map(l => `<div style="color:var(--acento); text-align:center; font-weight:900;">${l}</div>`).join('')}
+                    ${Array(25).fill(0).map((_, i) => i === 12 ? '<div class="cell free-cell">BINGO<br>MAESTRO</div>' : '<input type="number" class="cell" placeholder=".">').join('')}
+                </div>`;
+            cont.appendChild(wrap);
+        }
+
+        function marcar() {
+            const num = document.getElementById('bola').value;
+            if(!num) return;
+            let encontro = false;
+            document.querySelectorAll('input.cell').forEach(c => {
+                if(c.value === num) {
+                    c.classList.add('marked');
+                    encontro = true;
+                }
+            });
+            if(encontro) {
+                document.getElementById('snd-mark').play();
+                verificarVictoria();
+            }
+            document.getElementById('bola').value = "";
+            document.getElementById('bola').focus();
+        }
+
+        function verificarVictoria() {
+            const cartones = document.querySelectorAll('.card-wrapper');
+            let hayBingo = false;
+            cartones.forEach(card => {
+                const hits = card.querySelectorAll('.marked').length;
+                card.setAttribute('data-hits', hits);
+                if(hits >= 24) hayBingo = true;
+            });
+            if(hayBingo) { document.getElementById('snd-win').play(); alert("¡¡ BINGO !!"); }
+            
+            const cont = document.getElementById('contenedor-cartones');
+            const lista = Array.from(cartones).sort((a,b) => b.getAttribute('data-hits') - a.getAttribute('data-hits'));
+            lista.forEach(c => cont.appendChild(c));
+        }
+    </script>
+</body>
+</html>
